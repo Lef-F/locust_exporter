@@ -21,7 +21,6 @@ import (
 
 var (
 	namespace string
-	NameSpace *string
 )
 
 // Exporter structure
@@ -311,14 +310,16 @@ type locustStats struct {
 		Error       string `json:"error"`
 		Occurrences int    `json:"occurrences"`
 	} `json:"errors"`
-	TotalRps                                 float64 `json:"total_rps"`
-	FailRatio                                float64 `json:"fail_ratio"`
-	CurrentResponseTimePercentileNinetyFifth float64 `json:"current_response_time_percentile_95"`
-	CurrentResponseTimePercentileFiftieth    float64 `json:"current_response_time_percentile_50"`
-	WorkerCount                              int     `json:"worker_count,omitempty"`
-	State                                    string  `json:"state"`
-	UserCount                                int     `json:"user_count"`
-	Workers                                  []struct {
+	TotalRps                       float64 `json:"total_rps"`
+	FailRatio                      float64 `json:"fail_ratio"`
+	CurrentResponseTimePercentiles struct {
+		CurrentResponseTimePercentileNinetyFifth float64 `json:"response_time_percentile_0.95"`
+		CurrentResponseTimePercentileFiftieth    float64 `json:"response_time_percentile_0.5"`
+	} `json:"current_response_time_percentiles"`
+	WorkerCount int    `json:"worker_count,omitempty"`
+	State       string `json:"state"`
+	UserCount   int    `json:"user_count"`
+	Workers     []struct {
 		Id        string `json:"id"`
 		State     string `json:"state"`
 		UserCount int    `json:"user_count"`
@@ -346,8 +347,8 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	ch <- prometheus.MustNewConstMetric(e.locustUsers.Desc(), prometheus.GaugeValue, float64(locustStats.UserCount))
 	ch <- prometheus.MustNewConstMetric(e.locustFailRatio.Desc(), prometheus.GaugeValue, float64(locustStats.FailRatio))
-	ch <- prometheus.MustNewConstMetric(e.locustCurrentResponseTimePercentileNinetyFifth.Desc(), prometheus.GaugeValue, float64(locustStats.CurrentResponseTimePercentileNinetyFifth))
-	ch <- prometheus.MustNewConstMetric(e.locustCurrentResponseTimePercentileFiftieth.Desc(), prometheus.GaugeValue, float64(locustStats.CurrentResponseTimePercentileFiftieth))
+	ch <- prometheus.MustNewConstMetric(e.locustCurrentResponseTimePercentileNinetyFifth.Desc(), prometheus.GaugeValue, float64(locustStats.CurrentResponseTimePercentiles.CurrentResponseTimePercentileNinetyFifth))
+	ch <- prometheus.MustNewConstMetric(e.locustCurrentResponseTimePercentileFiftieth.Desc(), prometheus.GaugeValue, float64(locustStats.CurrentResponseTimePercentiles.CurrentResponseTimePercentileFiftieth))
 	ch <- prometheus.MustNewConstMetric(e.locustWorkersCount.Desc(), prometheus.GaugeValue, float64(len(locustStats.Workers)))
 	ch <- prometheus.MustNewConstMetric(e.locustWorkersRunningCount.Desc(), prometheus.GaugeValue, countWorkersByState(locustStats, "running"))
 	ch <- prometheus.MustNewConstMetric(e.locustWorkersHatchingCount.Desc(), prometheus.GaugeValue, countWorkersByState(locustStats, "hatching"))
